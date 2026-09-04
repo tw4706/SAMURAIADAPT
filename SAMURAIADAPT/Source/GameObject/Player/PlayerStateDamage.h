@@ -1,0 +1,16 @@
+#pragma once
+#include "PlayerStateBase.h"
+class PlayerStateDamage :public PlayerStateBase
+{
+public:
+	PlayerStateDamage(std::weak_ptr<Player> pPlayer);
+	~PlayerStateDamage() = default;
+
+	void Enter()  override;
+	void Update() override;
+	void Exit()   override;
+
+private:
+	float invisibleTimer_ = 0.0f;//無敵時間のタイマー
+};
+

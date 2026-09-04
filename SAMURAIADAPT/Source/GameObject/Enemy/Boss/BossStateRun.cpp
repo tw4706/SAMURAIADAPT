@@ -1,0 +1,124 @@
+#include "BossStateRun.h"
+#include "BossStateRush.h"
+#include "BossStateRangedAttack.h"
+#include "Boss.h"
+#include <algorithm>
+
+namespace
+{
+	//旋回している時の移動速度
+	constexpr float kOrbitSpeed = 150.0f;
+
+	//距離のズレの補正速度
+	constexpr float kRadialCorrectSpeed = 80.0f;
+
+	//線形補間の割合
+	constexpr float kRotateLerpRate = 0.3f;
+
+	//様子をうかがう距離
+	constexpr float kOrbitDistance = 400.0f;
+
+	//このズレ幅で補正速度が最大になる
+	constexpr float kMaxCorrectRange = 150.0f;
+
+	//斬撃攻撃を行う距離
+	constexpr float kRangedAttackDistance = 800.0f;
+}
+
+BossStateRun::BossStateRun(std::weak_ptr<Boss> pBoss, float searchRadius) :
+	BossStateBase(pBoss, searchRadius)
+{
+}
+
+void BossStateRun::Enter()
+{
+	auto boss = pBoss_.lock();
+	if (!boss)return;
+
+	isClockwise_ = (std::rand() % 2) == 0;
+
+	//走りアニメーションへ遷移
+	boss->ChangeAnimation(isClockwise_ ? AnimationState::BossRightWalk : AnimationState::BossLeftWalk);
+
+}
+
+void BossStateRun::Update()
+{
+	auto enemy = pEnemy_.lock();
+	if (!enemy)return;
+
+	auto boss = pBoss_.lock();
+	if (!boss)return;
+
+	Vector3 enemyPos = enemy->GetPos();
+	Vector3 playerPos = enemy->GetPlayerPos();
+
+	//プレイヤーからボスへの差分ベクトル
+	Vector3 fromPlayer = enemyPos - playerPos;
+	fromPlayer.y_ = 0.0f;
+
+	float distance = fromPlayer.Length();
+	//ほぼ重なっている場合は移動処理をしない
+	if (distance < 0.0001f) return;
+
+	//攻撃のクールタイムが来たら
+	if (boss->IsAttackReady())
+	{
+		std::shared_ptr<BossStateBase> nextState;
+
+		//距離が離れている場合は遠距離斬撃、近い場合は突進攻撃
+		if (distance >= kRangedAttackDistance)
+		{
+			nextState = std::make_shared<BossStateRangedAttack>(pBoss_, searchRadius_);
+		}
+		else
+		{
+			nextState = std::make_shared<BossStateRush>(pBoss_, searchRadius_);
+		}
+
+		boss->ChangeState(nextState);
+		return;
+	}
+
+	//プレイヤーから見た方向
+	Vector3 radialDir = fromPlayer.Normalize();
+
+	//旋回方向
+	Vector3 tangentDir = { -radialDir.z_, 0.0f, radialDir.x_ };
+	if (!isClockwise_)
+	{
+		tangentDir = tangentDir * -1.0f;
+	}
+
+	//適正距離からのズレ
+	float diff = distance - kOrbitDistance;
+
+	//ズレ量に応じて補正速度をクランプする
+	float correctRate = std::clamp(diff / kMaxCorrectRange, -1.0f, 1.0f);
+
+	//放射方向の補正速度
+	Vector3 radialVelocity = radialDir * (-correctRate * kRadialCorrectSpeed);
+
+	//接線方向の旋回速度
+	Vector3 tangentVelocity = tangentDir * kOrbitSpeed;
+
+	//移動ベクトルとして合成
+	Vector3 moveVec = radialVelocity + tangentVelocity;
+	float moveSpeed = moveVec.Length();
+
+	if (moveSpeed > 0.0001f)
+	{
+		Vector3 moveDir = moveVec.Normalize();
+		ApplyMove(enemy, enemyPos, moveDir, moveSpeed);
+	}
+
+	//向きは常にプレイヤーの方を向かせる
+	Vector3 toPlayerDir = playerPos - enemyPos;
+	toPlayerDir.y_ = 0.0f;
+	toPlayerDir.Normalize();
+	enemy->SetMoveAngle(RotateAngle(enemy->GetMoveAngle(), toPlayerDir, kRotateLerpRate));
+}
+
+void BossStateRun::Exit()
+{
+}

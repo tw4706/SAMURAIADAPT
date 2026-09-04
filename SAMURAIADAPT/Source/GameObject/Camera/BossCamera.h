@@ -1,0 +1,35 @@
+#pragma once
+#include "CameraBase.h"
+
+class CameraManager;
+class Player;
+class EnemyBase;
+class BossCamera :public CameraBase
+{
+public:
+    BossCamera();
+    void Init() override;
+    void Update(int stageModelHandle) override;
+
+    /// <summary>
+    /// 注視点の設定
+    /// </summary>
+    /// <param name="pPlayer">対象になるプレイヤー</param>
+    /// <param name="pBoss">対象となるボス</param>
+    void SetTarget(std::weak_ptr<Player> pPlayer, std::weak_ptr<EnemyBase> pBoss, CameraManager* pCameraManager);
+
+    /// <summary>
+    /// ボス演出が終了したかどうか
+    /// </summary>
+    /// <returns>0秒を下回ったらtrueを返す</returns>
+    bool IsBossEventFinished() const { return bossEventTimer_ <= 0.0f; }
+
+private:
+    float bossEventTimer_ = 0.0f;   //ボスイベントのタイマー
+    Vector3 lerpPos_;               //衝突判定の影響を受けない、補間用座標
+
+    std::weak_ptr<Player> pPlayer_;
+    std::weak_ptr<EnemyBase> pBoss_;
+    CameraManager* pCameraManager_ = nullptr;
+};
+

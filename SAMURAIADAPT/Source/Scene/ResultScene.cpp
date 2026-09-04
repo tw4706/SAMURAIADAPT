@@ -1,0 +1,319 @@
+#include "ResultScene.h"
+#include "TitleScene.h"
+#include "GameScene.h"
+#include "Game.h"
+#include "System/Input.h"
+#include "FadeManager.h"
+#include "SoundManager.h"
+#include<Dxlib.h>
+#include<memory>
+#include<cmath>
+#include<algorithm>
+#include<cassert>
+
+namespace
+{
+	//フェードの間隔
+	constexpr int kFadeInterval = 60;
+
+	//ランクの画像パス
+	const wchar_t* kRankImagePaths[] =
+	{
+		L"data/UI/S.png",
+		L"data/UI/A.png",
+		L"data/UI/B.png",
+		L"data/UI/C.png",
+	};
+
+	//ランクのタイム基準となる値
+	constexpr float kRankSTime = 100.0f;
+	constexpr float kRankATime = 140.0f;
+	constexpr float kRankBTime = 180.0f;
+
+	constexpr int kTimeCountDuration = 60;		//タイムをカウントし終わるまでのフレーム数
+
+	constexpr int kRankOffsetY = 60;			//ランクのY座標オフセット
+	constexpr int kRankScaleDuration = 20;		//ランク拡大にかけるフレーム数
+	constexpr float kRankScaleMax = 1.2f;		//ランクの最大拡大率
+
+	//ランクの拡縮
+	constexpr float kRankSpeed = 0.05f;			//拡縮の速さ
+	constexpr float kRankAmplitude = 0.1f;		//拡縮の振れ幅
+
+	//選択肢の座標
+	constexpr int kRetryPosX = 0;
+	constexpr int kRetryPosY = 140;
+	constexpr int kBackTitlePosX = 0;
+	constexpr int kBackTitlePosY = 200;
+
+	//GameOverの文字のY座標オフセット
+	constexpr int kGameOverOffsetY = 30;
+
+	//クリア時間のY座標オフセット
+	constexpr int kClearTimeOffsetY = 250;
+
+	//演出のタイミング
+	constexpr int kClearTimeShowFrame = 0;										//クリアタイムを出すフレーム
+	constexpr int kRankShowFrame = kClearTimeShowFrame + kTimeCountDuration;	//ランクを出すフレーム
+	constexpr int kButtonSlideStartFrame = kRankShowFrame + kRankScaleDuration;	//ボタンのスライドを始めるフレーム
+	constexpr int kButtonSlideDuration = 20;									//スライドするフレーム
+	constexpr int kButtonSlideDistance = 100;									//スライドのボタンの距離
+
+	//文字のオフセット
+	constexpr int kTextOffsetX = 4;
+}
+
+ResultScene::ResultScene(SceneManager& sceneManager, float clearTime, bool isGameOver) :
+	Scene(sceneManager),
+	update_(&ResultScene::FadeInUpdate),
+	draw_(&ResultScene::FadeDraw),
+	frameCount_(kFadeInterval),
+	clearTime_(clearTime),
+	isGameOver_(isGameOver),
+	rankHandle_(-1),
+	performanceCount_(0),
+	currentIndex_(0),
+	isInputEnabled_(false),
+	displayedTime_(0.0f)
+{
+	if (isGameOver_)return;
+
+	//ランク判定
+	if (clearTime_ <= kRankSTime)
+	{
+		rank_ = L'S';
+	}
+	else if (clearTime_ <= kRankATime)
+	{
+		rank_ = L'A';
+	}
+	else if (clearTime_ <= kRankBTime)
+	{
+		rank_ = L'B';
+	}
+	else
+	{
+		rank_ = L'C';
+	}
+}
+
+ResultScene::~ResultScene()
+{
+	//画像の削除
+	DeleteGraph(rankHandle_);
+}
+
+void ResultScene::Init()
+{
+	//ゲームオーバーでなければランク画像をロード
+	if (!isGameOver_)
+	{
+		int rankIndex = 0;
+		switch (rank_)
+		{
+		case L'S': rankIndex = 0; break;
+		case L'A': rankIndex = 1; break;
+		case L'B': rankIndex = 2; break;
+		case L'C': rankIndex = 3; break;
+		}
+
+		rankHandle_ = LoadGraph(kRankImagePaths[rankIndex]);
+		assert(rankHandle_ >= 0);
+	}
+
+	SoundManager::GetInstance().PlayBgm(BGM::Result);
+}
+
+void ResultScene::Update()
+{
+	(this->*update_)();
+}
+
+void ResultScene::Draw()
+{
+	(this->*draw_)();
+}
+
+void ResultScene::FadeInUpdate()
+{
+	frameCount_--;
+
+	if (frameCount_ <= 0)
+	{
+		update_ = &ResultScene::NormalUpdate;
+		draw_ = &ResultScene::NormalDraw;
+		return;
+	}
+}
+
+void ResultScene::NormalUpdate()
+{
+	//演出中は入力を受け付けず、カウンタを進める
+	if (!isInputEnabled_)
+	{
+		performanceCount_++;
+		if (performanceCount_ >= kButtonSlideStartFrame + kButtonSlideDuration)
+		{
+			isInputEnabled_ = true;
+		}
+		return;
+	}
+
+	//カウントを進める
+	performanceCount_++;
+
+	if (Input::GetInstance().IsTriggered("up"))
+	{
+		currentIndex_ = 0;
+		SoundManager::GetInstance().PlaySe(SE::CursoleMove);
+	}
+	else if (Input::GetInstance().IsTriggered("down"))
+	{
+		currentIndex_ = 1;
+		SoundManager::GetInstance().PlaySe(SE::CursoleMove);
+	}
+
+	if (Input::GetInstance().IsTriggered("next"))
+	{
+		SoundManager::GetInstance().PlaySe(SE::Decide);
+		update_ = &ResultScene::FadeOutUpdate;
+		draw_ = &ResultScene::FadeDraw;
+		frameCount_ = kFadeInterval;
+		return;
+	}
+}
+
+void ResultScene::FadeOutUpdate()
+{
+	frameCount_--;
+
+	if (frameCount_ < 0)
+	{
+		//シーンの削除
+		sceneManager_.RemoveScene();
+
+		//選択肢に応じたシーンの遷移を行う
+		if (currentIndex_ == 0)
+		{
+			sceneManager_.ChangeScene(std::make_shared<GameScene>(sceneManager_));
+			return;
+		}
+		else
+		{
+			sceneManager_.ChangeScene(std::make_shared<TitleScene>(sceneManager_));
+			return;
+		}
+	}
+}
+
+void ResultScene::FadeDraw()
+{
+	float rate;
+
+	if (update_ == &ResultScene::FadeInUpdate)
+	{
+		//フェードイン
+		rate = (float)frameCount_ / kFadeInterval;
+	}
+	else
+	{
+		//フェードアウト
+		rate = 1.0f-(float)frameCount_ / kFadeInterval;
+	}
+
+	rate = std::clamp(rate, 0.0f, 1.0f);
+
+	NormalDraw();
+
+	//フェードマネージャーの描画開始と終了
+	FadeManager::GetInstance().StartCapture();
+	DrawBoxAA(0, 0, Game::kScreenWidth, Game::kScreenHeight, GetColor(0, 0, 0), true);
+	FadeManager::GetInstance().EndCaptureAndDraw(rate);
+}
+
+void ResultScene::NormalDraw()
+{
+	//背景の描画
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
+	DrawBoxAA(0, 0, Game::kScreenWidth, Game::kScreenHeight, GetColor(0, 0, 0), true);
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+	int titleColor = (currentIndex_ == 0) ? 0xffffff :0xff0000;
+	int retryColor = (currentIndex_ == 1) ? 0xffffff : 0xff0000;
+
+	const int centerX = Game::kScreenWidth / 2;
+	const int centerY = Game::kScreenHeight / 2;
+
+	if (isGameOver_)
+	{
+		const wchar_t* text = L"GameOver";
+		int textWidth = GetDrawStringWidthToHandle(text, static_cast<int>(wcslen(text)), Game::kFontUIHandle);
+
+		DrawFormatStringToHandle(centerX - textWidth / 2 + kTextOffsetX, centerY - kGameOverOffsetY, 0xffffff, Game::kFontUIHandle, text);
+	}
+	else
+	{
+		if (performanceCount_ >= kClearTimeShowFrame)
+		{
+			//カウントアップの計算
+			float t = std::clamp(static_cast<float>(performanceCount_ - kClearTimeShowFrame) / kTimeCountDuration, 0.0f, 1.0f);
+			displayedTime_ = clearTime_ * t;
+
+			wchar_t timeBuffer[64];
+			swprintf_s(timeBuffer, L"クリアタイム: %.1f秒", displayedTime_);
+			int textWidth = GetDrawStringWidthToHandle(timeBuffer, static_cast<int>(wcslen(timeBuffer)), Game::kFontUIHandle);
+
+			DrawFormatStringToHandle(centerX - textWidth / 2, centerY - kClearTimeOffsetY, 0xffffff, Game::kFontUIHandle, timeBuffer);
+		}
+
+		//ランクはタイムのカウントが終わってから出す
+		if (performanceCount_ >= kRankShowFrame)
+		{
+			float rankScale;
+
+			//登場演出中かどうか
+			int elapsed = performanceCount_ - kRankShowFrame;
+			if (elapsed < kRankScaleDuration)
+			{
+				//登場時は0から最大サイズまでイージングで拡大
+				float rt = std::clamp(static_cast<float>(elapsed) / kRankScaleDuration, 0.0f, 1.0f);
+				rankScale = kRankScaleMax * (1.0f - std::pow(1.0f - rt, 3.0f));
+			}
+			else
+			{
+				//登場後はサイン波でずっと拡縮を繰り返す
+				float pulseElapsed = static_cast<float>(elapsed - kRankScaleDuration);
+				rankScale = kRankScaleMax + std::sin(pulseElapsed * kRankSpeed) * kRankAmplitude;
+			}
+
+			int rankW, rankH;
+			GetGraphSize(rankHandle_, &rankW, &rankH);
+
+			int drawW = static_cast<int>(rankW * rankScale);
+			int drawH = static_cast<int>(rankH * rankScale);
+
+			int drawX = centerX - drawW / 2;
+			int drawY = centerY - drawH / 2 - kRankOffsetY;
+
+			DrawExtendGraph(drawX, drawY, drawX + drawW, drawY + drawH, rankHandle_, true);
+		}
+	}
+
+	// ボタンのスライド計算
+	float t = std::clamp(static_cast<float>(performanceCount_ - kButtonSlideStartFrame) / kButtonSlideDuration, 0.0f, 1.0f);
+	float eased = 1.0f - std::pow(1.0f - t, 3.0f);
+	int slideOffset = static_cast<int>((1.0f - eased) * kButtonSlideDistance);
+
+	if (performanceCount_ >= kButtonSlideStartFrame)
+	{
+		//リトライ
+		const wchar_t* retryText = L"リトライ";
+		int retryWidth = GetDrawStringWidthToHandle(retryText, static_cast<int>(wcslen(retryText)), Game::kFontUIHandle);
+		DrawFormatStringToHandle(centerX - retryWidth / 2 + kRetryPosX, centerY + kRetryPosY - slideOffset, retryColor, Game::kFontUIHandle, retryText);
+
+		//タイトルに戻る
+		const wchar_t* titleText = L"タイトルにもどる";
+		int titleWidth = GetDrawStringWidthToHandle(titleText, static_cast<int>(wcslen(titleText)), Game::kFontUIHandle);
+		DrawFormatStringToHandle(centerX - titleWidth / 2 + kBackTitlePosX, centerY + kBackTitlePosY - slideOffset, titleColor, Game::kFontUIHandle, titleText);
+	}
+}
