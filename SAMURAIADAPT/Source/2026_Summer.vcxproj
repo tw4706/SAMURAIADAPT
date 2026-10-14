@@ -111,7 +111,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>Dxlib_h;$(ProjectDir)Math;$(ProjectDir)GameObject;$(ProjectDir)Scene;$(ProjectDir)System;$(ProjectDir)Player;$(ProjectDir)Enemy;$(ProjectDir);$(ProjectDir)CSV</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>Dxlib_h;$(ProjectDir)Math;$(ProjectDir)GameObject;$(ProjectDir)Scene;$(ProjectDir)System;$(ProjectDir)Player;$(ProjectDir)Enemy;$(ProjectDir);$(ProjectDir)CSV;$(ProjectDir)Manager;$(ProjectDir)AI</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -130,7 +130,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>Dxlib_h;$(ProjectDir)Common;$(ProjectDir)GameObject;$(ProjectDir)Scene;$(ProjectDir)System;$(ProjectDir)Player;$(ProjectDir)Enemy;$(ProjectDir);$(ProjectDir)CSV</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>Dxlib_h;$(ProjectDir)Common;$(ProjectDir)GameObject;$(ProjectDir)Scene;$(ProjectDir)System;$(ProjectDir)Player;$(ProjectDir)Enemy;$(ProjectDir);$(ProjectDir)CSV;$(ProjectDir)Manager;$(ProjectDir)AI</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -143,18 +143,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Application.cpp" />
-    <ClCompile Include="AStarPathFinder.cpp" />
-    <ClCompile Include="AttackSelect.cpp" />
+    <ClCompile Include="System\Application.cpp" />
+    <ClCompile Include="AI\AStarPathFinder.cpp" />
+    <ClCompile Include="AI\AttackSelect.cpp" />
     <ClCompile Include="UI\ButtonUI.cpp" />
     <ClCompile Include="GameObject\Camera\TitleCamera.cpp" />
     <ClCompile Include="Scene\PauseScene.cpp" />
     <ClCompile Include="UI\BossHPGaugeUI.cpp" />
     <ClCompile Include="GameObject\Enemy\Boss\BossStateRangedAttack.cpp" />
     <ClCompile Include="GameObject\Camera\BossCamera.cpp" />
-    <ClCompile Include="FadeManager.cpp" />
+    <ClCompile Include="Manager\FadeManager.cpp" />
     <ClCompile Include="GameObject\Enemy\Boss\BossStateRush.cpp" />
-    <ClCompile Include="EnemyNavigation.cpp" />
+    <ClCompile Include="AI\EnemyNavigation.cpp" />
     <ClCompile Include="GameObject\Enemy\Boss\BossStateAttack.cpp" />
     <ClCompile Include="GameObject\Enemy\Boss\BossStateDamage.cpp" />
     <ClCompile Include="GameObject\Enemy\Boss\BossStateDeath.cpp" />
@@ -162,13 +162,13 @@
     <ClCompile Include="GameObject\Enemy\Boss\BossStateIdle.cpp" />
     <ClCompile Include="GameObject\Enemy\Boss\BossStateBase.cpp" />
     <ClCompile Include="GameObject\Enemy\Boss\Boss.cpp" />
-    <ClCompile Include="ComboManager.cpp" />
+    <ClCompile Include="Manager\ComboManager.cpp" />
     <ClCompile Include="CSV\ComboDataLoader.cpp" />
     <ClCompile Include="CSV\EnemySpawnDataLoader.cpp" />
     <ClCompile Include="CSV\EnemyAttackDataLoader.cpp" />
-    <ClCompile Include="EffectManager.cpp" />
-    <ClCompile Include="SoundManager.cpp" />
-    <ClCompile Include="TitlePlayer.cpp" />
+    <ClCompile Include="Manager\EffectManager.cpp" />
+    <ClCompile Include="Manager\SoundManager.cpp" />
+    <ClCompile Include="GameObject\TitlePlayer.cpp" />
     <ClCompile Include="UI\ReticleUI.cpp" />
     <ClCompile Include="UI\EnemyHPGaugeUI.cpp" />
     <ClCompile Include="GameObject\Enemy\EnemyStateReact.cpp" />
@@ -181,9 +181,9 @@
     <ClCompile Include="GameObject\Enemy\EnemyAttackSubState\EnemyAttackSubStateBase.cpp" />
     <ClCompile Include="GameObject\Enemy\EnemyStateReturn.cpp" />
     <ClCompile Include="CSV\EnemyStatus.cpp" />
-    <ClCompile Include="EnemyManager.cpp" />
+    <ClCompile Include="Manager\EnemyManager.cpp" />
     <ClCompile Include="GameObject\Enemy\BigMan.cpp" />
-    <ClCompile Include="CollisionManager.cpp" />
+    <ClCompile Include="Manager\CollisionManager.cpp" />
     <ClCompile Include="GameObject\Enemy\EnemyStateDamage.cpp" />
     <ClCompile Include="GameObject\Enemy\EnemyStateDeath.cpp" />
     <ClCompile Include="GameObject\Enemy\EnemyStateAttack.cpp" />
@@ -210,16 +210,16 @@
     <ClCompile Include="GameObject\Camera\LockOnCamera.cpp" />
     <ClCompile Include="UI\PlayerHPGaugeUI.cpp" />
     <ClCompile Include="UI\HPGaugeUI.cpp" />
-    <ClCompile Include="LockOnManager.cpp" />
-    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="Manager\LockOnManager.cpp" />
+    <ClCompile Include="System\Model.cpp" />
     <ClCompile Include="GameObject\Stage.cpp" />
     <ClCompile Include="GameObject\Collider\PolygonCollider.cpp" />
-    <ClCompile Include="PathFollower.cpp" />
+    <ClCompile Include="AI\PathFollower.cpp" />
     <ClCompile Include="GameObject\Player\PlayerStateDamage.cpp" />
     <ClCompile Include="GameObject\Player\PlayerStateDeath.cpp" />
     <ClCompile Include="GameObject\Player\PlayerStateGuard.cpp" />
     <ClCompile Include="GameObject\Player\PlayerStateJumpAttack.cpp" />
-    <ClCompile Include="PlayerActionCounter.cpp" />
+    <ClCompile Include="AI\PlayerActionCounter.cpp" />
     <ClCompile Include="GameObject\Player\PlayerStateKnockBack.cpp" />
     <ClCompile Include="Scene\SceneManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -240,21 +240,21 @@
     <ClCompile Include="Scene\TitleScene.cpp" />
     <ClCompile Include="CSV\WayPointLoader.cpp" />
     <ClCompile Include="UI\UIBase.cpp" />
-    <ClCompile Include="UIManager.cpp" />
+    <ClCompile Include="Manager\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Application.h" />
-    <ClInclude Include="AStarPathFinder.h" />
-    <ClInclude Include="AttackSelect.h" />
+    <ClInclude Include="System\Application.h" />
+    <ClInclude Include="AI\AStarPathFinder.h" />
+    <ClInclude Include="AI\AttackSelect.h" />
     <ClInclude Include="UI\ButtonUI.h" />
     <ClInclude Include="GameObject\Camera\TitleCamera.h" />
     <ClInclude Include="Scene\PauseScene.h" />
     <ClInclude Include="UI\BossHPGaugeUI.h" />
     <ClInclude Include="GameObject\Enemy\Boss\BossStateRangedAttack.h" />
     <ClInclude Include="GameObject\Camera\BossCamera.h" />
-    <ClInclude Include="FadeManager.h" />
+    <ClInclude Include="Manager\FadeManager.h" />
     <ClInclude Include="GameObject\Enemy\Boss\BossStateRush.h" />
-    <ClInclude Include="EnemyNavigation.h" />
+    <ClInclude Include="AI\EnemyNavigation.h" />
     <ClInclude Include="GameObject\Enemy\Boss\BossStateAttack.h" />
     <ClInclude Include="GameObject\Enemy\Boss\BossStateDamage.h" />
     <ClInclude Include="GameObject\Enemy\Boss\BossStateDeath.h" />
@@ -262,7 +262,7 @@
     <ClInclude Include="GameObject\Enemy\Boss\BossStateIdle.h" />
     <ClInclude Include="GameObject\Enemy\Boss\BossStateBase.h" />
     <ClInclude Include="GameObject\Enemy\Boss\Boss.h" />
-    <ClInclude Include="ComboManager.h" />
+    <ClInclude Include="Manager\ComboManager.h" />
     <ClInclude Include="CSV\ComboData.h" />
     <ClInclude Include="CSV\ComboDataLoader.h" />
     <ClInclude Include="CSV\EnemySpawnData.h" />
@@ -270,9 +270,9 @@
     <ClInclude Include="CSV\EnemyAttackType.h" />
     <ClInclude Include="CSV\EnemyAttackData.h" />
     <ClInclude Include="CSV\EnemyAttackDataLoader.h" />
-    <ClInclude Include="EffectManager.h" />
-    <ClInclude Include="SoundManager.h" />
-    <ClInclude Include="TitlePlayer.h" />
+    <ClInclude Include="Manager\EffectManager.h" />
+    <ClInclude Include="Manager\SoundManager.h" />
+    <ClInclude Include="GameObject\TitlePlayer.h" />
     <ClInclude Include="UI\ReticleUI.h" />
     <ClInclude Include="UI\EnemyHPGaugeUI.h" />
     <ClInclude Include="GameObject\Enemy\EnemyStateReact.h" />
@@ -286,9 +286,9 @@
     <ClInclude Include="CSV\EnemyData.h" />
     <ClInclude Include="GameObject\Enemy\EnemyStateReturn.h" />
     <ClInclude Include="CSV\EnemyStatus.h" />
-    <ClInclude Include="EnemyManager.h" />
+    <ClInclude Include="Manager\EnemyManager.h" />
     <ClInclude Include="GameObject\Enemy\BigMan.h" />
-    <ClInclude Include="CollisionManager.h" />
+    <ClInclude Include="Manager\CollisionManager.h" />
     <ClInclude Include="GameObject\Enemy\EnemyStateDamage.h" />
     <ClInclude Include="GameObject\Enemy\EnemyStateDeath.h" />
     <ClInclude Include="GameObject\Enemy\EnemyStateAttack.h" />
@@ -315,15 +315,15 @@
     <ClInclude Include="GameObject\Camera\LockOnCamera.h" />
     <ClInclude Include="UI\PlayerHPGaugeUI.h" />
     <ClInclude Include="UI\HPGaugeUI.h" />
-    <ClInclude Include="LockOnManager.h" />
-    <ClInclude Include="Model.h" />
+    <ClInclude Include="Manager\LockOnManager.h" />
+    <ClInclude Include="System\Model.h" />
     <ClInclude Include="GameObject\Collider\PolygonCollider.h" />
-    <ClInclude Include="PathFollower.h" />
+    <ClInclude Include="AI\PathFollower.h" />
     <ClInclude Include="GameObject\Player\PlayerStateDamage.h" />
     <ClInclude Include="GameObject\Player\PlayerStateDeath.h" />
     <ClInclude Include="GameObject\Player\PlayerStateGuard.h" />
     <ClInclude Include="GameObject\Player\PlayerStateJumpAttack.h" />
-    <ClInclude Include="PlayerActionCounter.h" />
+    <ClInclude Include="AI\PlayerActionCounter.h" />
     <ClInclude Include="GameObject\Player\PlayerStateKnockBack.h" />
     <ClInclude Include="Scene\SceneManager.h" />
     <ClInclude Include="Scene\Scene.h" />
@@ -333,7 +333,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="GameObject\Stage.h" />
     <ClInclude Include="System\Animation.h" />
-    <ClInclude Include="Game.h" />
+    <ClInclude Include="System\Game.h" />
     <ClInclude Include="GameObject\GameObject.h" />
     <ClInclude Include="System\Input.h" />
     <ClInclude Include="Math\Matrix4x4.h" />
@@ -343,7 +343,7 @@
     <ClInclude Include="Scene\TitleScene.h" />
     <ClInclude Include="CSV\WayPointLoader.h" />
     <ClInclude Include="UI\UIBase.h" />
-    <ClInclude Include="UIManager.h" />
+    <ClInclude Include="Manager\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2026_Summer.rc" />

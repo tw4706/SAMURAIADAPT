@@ -4,7 +4,7 @@
 #include "Animation.h"
 #include "Camera/CameraManager.h"
 #include "ComboManager.h"
-#include "../../PlayerActionCounter.h"
+#include "AI/PlayerActionCounter.h"
 
 class Input;
 class Katana;
