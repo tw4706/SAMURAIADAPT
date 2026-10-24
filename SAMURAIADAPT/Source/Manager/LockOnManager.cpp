@@ -20,6 +20,12 @@ namespace
 
 	//ロックオンを行う索敵の視野角
 	constexpr float kLockOnAngle = 0.707f;
+
+	//ロックオン可能な敵かどうか(死亡アニメーション中の敵はHPが0でもIsDeadがfalseなのでHPも見る)
+	bool IsTargetable(const std::shared_ptr<EnemyBase>& enemy)
+	{
+		return enemy && !enemy->IsDead() && enemy->GetHP() > 0;
+	}
 }
 
 LockOnManager::LockOnManager()
@@ -37,8 +43,8 @@ void LockOnManager::Update(std::shared_ptr<Player> pPlayer, const std::vector<st
 	//ロックオン中でなら何もしない
 	if (!IsLockOn()) return;
 
-	//ターゲットのHPが0以下なら
-	if (pCurrentTarget_->GetHP()<=0)
+	//ターゲットが死亡している(HPが0以下)なら
+	if (!IsTargetable(pCurrentTarget_))
 	{
 		//次のターゲットを距離を見て決める
 		float closestDistanceSq = FLT_MAX;
@@ -48,7 +54,7 @@ void LockOnManager::Update(std::shared_ptr<Player> pPlayer, const std::vector<st
 
 		for (const auto& enemy : pEnemies)
 		{
-			if (!enemy || enemy->IsDead() || enemy == pCurrentTarget_) continue;
+			if (!IsTargetable(enemy) || enemy == pCurrentTarget_) continue;
 
 			//プレイヤーとの距離が1000以上離れている敵は無視
 			Vector3 diff = enemy->GetPos() - playerPos;
@@ -86,9 +92,7 @@ void LockOnManager::Update(std::shared_ptr<Player> pPlayer, const std::vector<st
 		else
 		{
 			//敵が全滅、または範囲内に誰もいないならロックオンを解除
-			pCameraManager->ChangeCamera(L"PlayerCamera");
-			pPlayer->SetLockOn(false);
-			pCurrentTarget_ = nullptr;
+			ReleaseLockOn(pPlayer, pCameraManager);
 			return;
 		}
 	}
@@ -110,7 +114,7 @@ void LockOnManager::Update(std::shared_ptr<Player> pPlayer, const std::vector<st
 
 		for (const auto& enemy : pEnemies)
 		{
-			if (!enemy || enemy->IsDead() || enemy == pCurrentTarget_) continue;
+			if (!IsTargetable(enemy) || enemy == pCurrentTarget_) continue;
 
 			Vector3 vecB = enemy->GetPos() - playerPos;
 			if (vecB.LengthSq() > kTargetChangeDistanceSq) continue;
@@ -162,20 +166,7 @@ void LockOnManager::StartLockOn(std::shared_ptr<Player> pPlayer, const std::vect
 	//すでにロックオン中なら
 	if (IsLockOn())
 	{
-		auto activeCam = pCameraManager->GetActiveCamera();
-		auto playerCam = pCameraManager->GetCamera(L"PlayerCamera");
-		auto lockOnCamera = std::dynamic_pointer_cast<LockOnCamera>(activeCam);
-		auto playerCamera = std::dynamic_pointer_cast<PlayerCamera>(playerCam);
-
-		//プレイヤーカメラに戻る前に角度を設定
-		if (lockOnCamera && playerCamera)
-		{
-			playerCamera->SetRotationToLockOn(lockOnCamera->GetPos(), lockOnCamera->GetCameraTarget());
-		}
-
-		pCameraManager->ChangeCamera(L"PlayerCamera");
-		pPlayer->SetLockOn(false);
-		pCurrentTarget_ = nullptr;
+		ReleaseLockOn(pPlayer, pCameraManager);
 		return;
 	}
 
@@ -195,7 +186,7 @@ void LockOnManager::StartLockOn(std::shared_ptr<Player> pPlayer, const std::vect
 
 	for (const auto& enemy : pEnemies)
 	{
-		if (!enemy || enemy->IsDead()) continue;
+		if (!IsTargetable(enemy)) continue;
 
 		Vector3 diff = enemy->GetPos() - playerPos;
 		float distSq = diff.LengthSq();
@@ -244,4 +235,28 @@ void LockOnManager::StartLockOn(std::shared_ptr<Player> pPlayer, const std::vect
 			pCurrentTarget_ = closestEnemy;
 		}
 	}
+}
+
+void LockOnManager::ReleaseLockOn(std::shared_ptr<Player> pPlayer, CameraManager* pCameraManager)
+{
+	auto activeCam = pCameraManager->GetActiveCamera();
+	auto lockOnCamera = std::dynamic_pointer_cast<LockOnCamera>(activeCam);
+
+	//ロックオンカメラがアクティブな時だけプレイヤーカメラに戻す(ボス演出中などは切り替えない)
+	if (lockOnCamera)
+	{
+		auto playerCamera = std::dynamic_pointer_cast<PlayerCamera>(pCameraManager->GetCamera(L"PlayerCamera"));
+
+		//プレイヤーカメラに戻る前に角度を設定
+		if (playerCamera)
+		{
+			playerCamera->SetRotationToLockOn(lockOnCamera->GetPos(), lockOnCamera->GetCameraTarget());
+		}
+
+		pCameraManager->ChangeCamera(L"PlayerCamera");
+	}
+
+	pPlayer->SetLockOn(false);
+	pPlayer->SetLockOnEnemy(std::weak_ptr<EnemyBase>());
+	pCurrentTarget_ = nullptr;
 }

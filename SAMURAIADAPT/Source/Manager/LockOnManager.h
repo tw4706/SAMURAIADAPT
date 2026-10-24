@@ -27,6 +27,11 @@ public:
 
 
 private:
+	/// <summary>
+	/// ロックオンを解除してプレイヤーカメラに戻す
+	/// </summary>
+	void ReleaseLockOn(std::shared_ptr<Player>pPlayer, CameraManager* pCameraManager);
+
 	std::shared_ptr<EnemyBase>pCurrentTarget_=nullptr;	//ターゲットになる敵
 };
 
